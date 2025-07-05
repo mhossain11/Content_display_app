@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,7 +9,8 @@ import 'package:flutter/services.dart';
 
 
 class SliderShowScreen extends StatefulWidget {
-  const SliderShowScreen({super.key});
+   SliderShowScreen({super.key,required this.image});
+  List<String> image;
 
   @override
   _SliderShowScreenState createState() => _SliderShowScreenState();
@@ -31,12 +32,6 @@ class _SliderShowScreenState extends State<SliderShowScreen> {
     super.initState();
   }
 
-  List<String> imageUrls = [
-    'https://images.pexels.com/photos/1212487/pexels-photo-1212487.jpeg',
-    'https://images.pexels.com/photos/1366630/pexels-photo-1366630.jpeg',
-    'https://images.pexels.com/photos/40465/pexels-photo-40465.jpeg',
-    'https://images.pexels.com/photos/1535162/pexels-photo-1535162.jpeg'
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -51,19 +46,38 @@ class _SliderShowScreenState extends State<SliderShowScreen> {
       });
       print(_isAutoPlay);
         },
+        onLongPress: () {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Exit App'),
+              content: const Text('Are you sure you want to exit?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context), // Cancel
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    exit(0); // Exit the app
+                  },
+                  child: const Text('Exit'),
+                ),
+              ],
+            ),
+          );
+        },
         child: SafeArea(
           child: SizedBox(
             width: screenWidth,
             height: screenHeight,
             child: CarouselSlider(
-              items: imageUrls.map((url) {
+              items:widget.image.map((url) {
 
-                return CachedNetworkImage(
-                  imageUrl: url,
+                return Image.file(
+                  File(url),
                   fit: BoxFit.cover,
                   height: screenHeight,
-                  placeholder: (context, url) => Center(child: CircularProgressIndicator()),
-                  errorWidget: (context, url, error) => Center(child: Icon(Icons.error)),
                 );
               }).toList(),
               carouselController: _controller,
