@@ -4,13 +4,15 @@ import 'dart:io';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
+
 
 
 
 
 class SliderShowScreen extends StatefulWidget {
    SliderShowScreen({super.key,required this.image});
-  List<String> image;
+  List<Uint8List> image;
 
   @override
   _SliderShowScreenState createState() => _SliderShowScreenState();
@@ -20,16 +22,23 @@ class _SliderShowScreenState extends State<SliderShowScreen> {
 
   final CarouselSliderController _controller = CarouselSliderController();
   bool _isAutoPlay = true;
+
+  late List<MemoryImage> memoryImages;
   @override
   void initState() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,overlays: []);
+    super.initState();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,overlays: []); //status bar hide
 
+    // Convert Uint8List to MemoryImage only once (cached in RAM)
+    memoryImages = widget.image.map((bytes) => MemoryImage(bytes)).toList();
+
+    WakelockPlus.enable(); // 🔥 এটা screen lock / dim হতে দিবে না
     Timer.periodic(Duration(seconds: 10), (timer){
       setState(() {
         _isAutoPlay = true;
       });
     });
-    super.initState();
+
   }
 
 
@@ -72,12 +81,14 @@ class _SliderShowScreenState extends State<SliderShowScreen> {
             width: screenWidth,
             height: screenHeight,
             child: CarouselSlider(
-              items:widget.image.map((url) {
+              items:memoryImages.map((url) {
 
-                return Image.file(
-                  File(url),
+                return Image(
+                  image: url,
                   fit: BoxFit.cover,
                   height: screenHeight,
+                  gaplessPlayback: true,// ✅ পুরনো ফ্রেম সরিয়ে না দিয়ে একই ফ্রেম ব্যবহার করে
+
                 );
               }).toList(),
               carouselController: _controller,
@@ -92,6 +103,13 @@ class _SliderShowScreenState extends State<SliderShowScreen> {
         ),
       ),
     );
+  }
+
+
+  @override
+  void dispose() {
+    WakelockPlus.disable(); // ✅ পরবর্তী screen গেলে screen lock allow করতে চাইলে
+    super.dispose();
   }
 }
 
