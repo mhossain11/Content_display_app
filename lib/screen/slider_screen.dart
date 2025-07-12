@@ -32,7 +32,7 @@ class _SliderShowScreenState extends State<SliderShowScreen> {
     // Convert Uint8List to MemoryImage only once (cached in RAM)
     memoryImages = widget.image.map((bytes) => MemoryImage(bytes)).toList();
 
-    WakelockPlus.enable(); // 🔥 এটা screen lock / dim হতে দিবে না
+    WakelockPlus.enable(); //  এটা screen lock / dim হতে দিবে না
     Timer.periodic(Duration(seconds: 10), (timer){
       setState(() {
         _isAutoPlay = true;
@@ -108,6 +108,8 @@ class _SliderShowScreenState extends State<SliderShowScreen> {
 
   @override
   void dispose() {
+    memoryImages.clear();
+    widget.image.clear();
     WakelockPlus.disable(); // ✅ পরবর্তী screen গেলে screen lock allow করতে চাইলে
     super.dispose();
   }

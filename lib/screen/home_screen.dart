@@ -1,15 +1,17 @@
-
-
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:contentdisplay_app/screen/image_model.dart';
 import 'package:contentdisplay_app/screen/slider_screen.dart';
 import 'package:contentdisplay_app/widgets/custom_dialog.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-
+import 'package:image/image.dart' as img;
 import 'image_gallary.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,8 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   TextEditingController uploadLinkController = TextEditingController();
   bool _isPicking = false;
   bool _isSaving = false;
-  List<String> savedImagePaths = [];
-  List<Uint8List> cachedImageBytesList = [];
+  List<ImageModel> imageItems  = [];
 
   @override
   void initState() {
@@ -48,33 +49,41 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
     setState(() {
+      _isSaving = true;
       _isPicking = true;
       // 🚀 saving শুরু
     });
     try{
       final imagePicker = ImagePicker();
-      final List<XFile>? pickedImages = await imagePicker.pickMultiImage(); // 🔥 Multiple image
-     // final pickImage = await imagePicker.pickImage(source: ImageSource.gallery);
+      final List<XFile> pickedImages = await imagePicker.pickMultiImage(); // 🔥 Multiple image
+      List<ImageModel> newItems = [];
 
-      if(pickedImages != null && pickedImages.isNotEmpty){
+      if(pickedImages.isNotEmpty){
         for(XFile image in pickedImages){
           Uint8List bytes  = await image.readAsBytes();
+          bytes =resizeImageInIsolate(bytes);
           String filename = 'content_${DateTime.now().millisecondsSinceEpoch}.jpg';
           String savePath = await saveImageToCache(bytes, filename);
-          // Delay দিয়ে filename duplication এড়াতে পারেন
-          await Future.delayed(Duration(milliseconds: 300));
-          setState(() {
-            _isSaving = true;
-            savedImagePaths.add(savePath);
-            cachedImageBytesList.add(bytes); // 🔥 RAM cache এ রাখছেন
-
-          });
+          newItems.add(ImageModel(path: savePath, bytes: bytes));// 🔥 RAM cache এ রাখছেন
         }
+        if (!mounted) return;
+        setState(() {
+          imageItems.addAll(newItems);
+          _isSaving = false;
+        });
 
       }
     }catch(e){
       print("Error picking image: $e");
+      if (!mounted) return;
+      showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+        title: Text("Error"),
+        content: Text(e.toString()),
+      ));
     }finally{
+      if (!mounted) return;
       setState(() {
         _isPicking = false;
         _isSaving = false; // ✅ saving শেষ
@@ -87,19 +96,35 @@ class _HomeScreenState extends State<HomeScreen> {
     final dir = await getApplicationDocumentsDirectory();
     final List<FileSystemEntity> files = dir.listSync();
 
-    final List<String> paths = [];
-    final List<Uint8List> imageCacheBytes = [];
+    final prefs = await SharedPreferences.getInstance();
+    final savedOrder = prefs.getStringList('image_order') ?? [];
+
+    final List<ImageModel> loadedItems = [];
 
     for (var file in files) {
       if (file is File && (file.path.endsWith(".jpg") || file.path.endsWith(".png"))) {
-        paths.add(file.path);
-        imageCacheBytes.add(await file.readAsBytes());
+        final bytes = await file.readAsBytes();
+        loadedItems.add(ImageModel(path: file.path, bytes: bytes));
       }
     }
 
+    final reordered = <ImageModel>[];
+    for (final path in savedOrder) {
+      final match = loadedItems.firstWhere(
+            (img) => img.path == path,
+        orElse: () => ImageModel(path: '', bytes: Uint8List(0)),
+      );
+      if (match.path.isNotEmpty) reordered.add(match);
+    }
+
+    // Add remaining (new) images at the end
+    final remaining = loadedItems.where((e) => !savedOrder.contains(e.path));
+    reordered.addAll(remaining);
+
+    if (!mounted) return;
     setState(() {
-      savedImagePaths = paths; // পুরাতন ছবি লোড
-      cachedImageBytesList = imageCacheBytes;
+      imageItems = reordered;
+     // savedImagePaths = loadedItems.map((e)=>e.path).toList();
     });
   }
 
@@ -116,19 +141,19 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Center(child: ElevatedButton(onPressed: (){
-
+              Center(child: ElevatedButton(
+                  onPressed: (){
                 showDialog(
                     context: context,
                     builder: (context){
-                      return  AlertDialog(
+                      return CustomAlertDialog(
                         title: Column(
                           children: [
-                            ElevatedButton(onPressed: (){
+                           /* ElevatedButton(onPressed: (){
                               showDialog(
                                 context: context,
                                 builder: (BuildContext context) {
-                                  return CustomDialogs(
+                                  return CustomDialog(
                                       title: Column(
                                         children: [
                                           TextFormField()
@@ -136,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 },
                               );
                               // Navigator.of(context).pop();
-                            }, child: Text('Link Upload')),
+                            }, child: Text('Link Upload')),*/
                             ElevatedButton(onPressed: (){
                               Navigator.of(context).pop();// <-- dialog বন্ধ
                               pickFromExternal();
@@ -149,24 +174,38 @@ class _HomeScreenState extends State<HomeScreen> {
               }, child: Text('Setting'))),
               Center(child: ElevatedButton(onPressed: (){
                 Navigator.push(context, MaterialPageRoute(
-                    builder: (context)=>ImageGallary(image:savedImagePaths ,)));
+                    builder: (context)=>ImageGallary(image:imageItems,)));
               }, child: Text('images'))),
               Center(child: ElevatedButton(onPressed: (){
-                if(savedImagePaths .isEmpty){
+                loadCachedImages();
+                if(imageItems .isEmpty){
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("Image is Empty.please stroe image")),
                   );
                 }else{
+                  final bytesList = imageItems.map((e) => e.bytes).toList();
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => SliderShowScreen(image: cachedImageBytesList),
+                      builder: (context) => SliderShowScreen(image: bytesList),
+
                     ),
                         (Route<dynamic> route) => false, // 🔥 আগের সব route মুছে ফেলে
                   );
 
                 }
               }, child: Text('Start Slide'))),
+              /*Center(child: ElevatedButton(onPressed: (){
+                setState(() {
+                  imageItems.clear();
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("🧹 Cache cleared"),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }, child: Text('🧹 Clear Cache'))),*/
             ],
           ),
 
@@ -177,21 +216,31 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    CircularProgressIndicator(color: Colors.white),
-                    SizedBox(height: 16),
+                  children: [
+                    const CircularProgressIndicator(color: Colors.white),
+                    const SizedBox(height: 16),
                     Text(
-                      "Saving images...",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      "Saving images.",
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ],
                 ),
               ),
             ),
+
+
+
+
         ],
       ),
 
 
     );
   }
+}
+Uint8List resizeImageInIsolate(Uint8List originalBytes) {
+  final image = img.decodeImage(originalBytes); // এটা raw bytes (originalBytes) কে ডিকোড করে image object বানায়। এটি package:image/image.dart থেকে আসা ফাংশন।
+  if (image == null) return originalBytes;
+  final resized = img.copyResize(image, width: 600); //এটা একটি function, যেটা image bytes (Uint8List) ইনপুট হিসেবে নেয়। যদি width = 600 মানে হচ্ছে যদি ইউজার কোনো width না দেয়, তাহলে default width হবে 600px।
+  return Uint8List.fromList(img.encodeJpg(resized));
 }
