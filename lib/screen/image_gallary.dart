@@ -1,6 +1,7 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -45,7 +46,7 @@ class _ImageGallaryState extends State<ImageGallary> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Save Image"),
+      appBar: AppBar(title: Text("Gallery"),
       actions: [
         
         IconButton(onPressed: ()async{
@@ -92,7 +93,14 @@ class _ImageGallaryState extends State<ImageGallary> {
         ],
       ),
       body: imageList.isEmpty
-          ? const Center(child: Text('List is Empty')) :
+          ? Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Center(child: Image(image: AssetImage('assets/images/empty_file.png'))),
+              Center(child: Text("Ouhh...it's empty in here!",style: TextStyle(fontSize: 20.sp,fontWeight: FontWeight.bold))),
+            ],
+          ) :
       ReorderableGridView.count(
           onReorder: (oldIndex,newIndex){
             final path = imageList.removeAt(oldIndex);

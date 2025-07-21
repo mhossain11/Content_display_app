@@ -6,9 +6,11 @@ import 'package:contentdisplay_app/screen/slider_screen.dart';
 import 'package:contentdisplay_app/widgets/custom_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image/image.dart' as img;
+import '../widgets/button.dart';
 import 'image_gallary.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isPicking = false;
   bool _isSaving = false;
   List<ImageModel> imageItems  = [];
+
 
   @override
   void initState() {
@@ -132,80 +135,153 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
     return Scaffold(
 
       body: Stack(
         children: [
           Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Center(child: ElevatedButton(
-                  onPressed: (){
-                showDialog(
-                    context: context,
-                    builder: (context){
-                      return CustomAlertDialog(
-                        title: Column(
-                          children: [
-                           /* ElevatedButton(onPressed: (){
-                              showDialog(
+              Padding(
+                padding: const EdgeInsets.only(top: 5.0),
+                child: Image.asset('assets/images/slogo.png'),
+              ),
+              SizedBox(height: 30,),
+
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 50.h,
+                        child: OutlinedButton.icon(
+                          onPressed: (){
+                            showDialog(
                                 context: context,
-                                builder: (BuildContext context) {
-                                  return CustomDialog(
-                                      title: Column(
-                                        children: [
-                                          TextFormField()
-                                        ],));
-                                },
-                              );
-                              // Navigator.of(context).pop();
-                            }, child: Text('Link Upload')),*/
-                            ElevatedButton(onPressed: (){
-                              Navigator.of(context).pop();// <-- dialog বন্ধ
-                              pickFromExternal();
-                            }, child: Text('Storage')),
-                          ],
+                                builder: (context){
+                                  return CustomAlertDialog(
+                                    title: Column(
+                                      children: [
+                                        /* ElevatedButton(onPressed: (){
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return CustomDialog(
+                                          title: Column(
+                                            children: [
+                                              TextFormField()
+                                            ],));
+                                    },
+                                  );
+                                  // Navigator.of(context).pop();
+                                }, child: Text('Link Upload')),*/
+                                        SizedBox(
+                                          height: 50.h,
+                                          child: OutlinedButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();// <-- dialog বন্ধ
+                                              pickFromExternal();
+                                            },
+                                            style: OutlinedButton.styleFrom(
+                                                foregroundColor: Color(0xFF00B6F1),
+                                                iconSize: 30,
+                                                side: BorderSide(
+                                                    color: Colors.blue,
+                                                    width: 2
+                                                )
+                                            ),
+                                            child: Text('Storage',style: TextStyle(fontSize: 20.sp),),
+                                          ),
+                                        ),
+                                       
+                                      ],
+                                    ),
+                                  );
+                                });
+                          },
+                          label:Text('Setting',style: TextStyle(fontSize: 20.sp),),
+
+                          style: OutlinedButton.styleFrom(
+                              foregroundColor: Color(0xFF00B6F1),
+                              iconSize: 30,
+
+                              side: BorderSide(
+                                  color: Colors.blue,
+                                  width: 2
+                              )
+                          ),
+                          icon: Image.asset('assets/icon/settings.png',
+                            width: 30.w,height: 30.h,),
                         ),
-                      );
-                    });
-
-              }, child: Text('Setting'))),
-              Center(child: ElevatedButton(onPressed: (){
-                Navigator.push(context, MaterialPageRoute(
-                    builder: (context)=>ImageGallary(image:imageItems,)));
-              }, child: Text('images'))),
-              Center(child: ElevatedButton(onPressed: (){
-                loadCachedImages();
-                if(imageItems .isEmpty){
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Image is Empty.please stroe image")),
-                  );
-                }else{
-                  final bytesList = imageItems.map((e) => e.bytes).toList();
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SliderShowScreen(image: bytesList),
-
+                      ),
                     ),
-                        (Route<dynamic> route) => false, // 🔥 আগের সব route মুছে ফেলে
-                  );
+                    SizedBox(width: 5,),
+                    Expanded(
+                      child: SizedBox(
+                        height: 50.h,
+                        child: OutlinedButton.icon(
+                          onPressed: (){
+                            Navigator.push(context, MaterialPageRoute(
+                                builder: (context)=>ImageGallary(image:imageItems,)));
+                          },
+                          label:Text('Gallery',style: TextStyle(fontSize: 20.sp),),
+                          style: OutlinedButton.styleFrom(
+                              foregroundColor: Color(0xFF00B6F1),
+                              iconSize: 30,
+                              side: BorderSide(
+                                  color: Colors.blue,
+                                  width: 2
+                              )
+                          ),
+                          icon: Image.asset('assets/icon/gallary.png',
+                            width: 30.w,height: 30.h,),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 15,),
+              SizedBox(
+                width: screenWidth/2,
+                height: 50.h,
+                child: OutlinedButton.icon(
+                    onPressed: (){
+                      loadCachedImages();
+                      if(imageItems .isEmpty){
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Image is Empty.please stroe image")),
+                        );
+                      }else{
+                        final bytesList = imageItems.map((e) => e.bytes).toList();
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SliderShowScreen(image: bytesList),
 
-                }
-              }, child: Text('Start Slide'))),
-              /*Center(child: ElevatedButton(onPressed: (){
-                setState(() {
-                  imageItems.clear();
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("🧹 Cache cleared"),
-                    backgroundColor: Colors.green,
+                          ),
+                              (Route<dynamic> route) => false, // 🔥 আগের সব route মুছে ফেলে
+                        );
+
+                      }
+                    },
+                  label:Text('Start Slide',style: TextStyle(fontSize: 20.sp),),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Color(0xFF00B6F1),
+                    iconSize: 30,
+                    side: BorderSide(
+                      color: Colors.blue,
+                      width: 2
+                    )
                   ),
-                );
-              }, child: Text('🧹 Clear Cache'))),*/
+                  icon: Image.asset('assets/icon/start_s.png',
+                  width: 30.w,height: 30.h,),
+                   ),
+              )
             ],
           ),
 
@@ -221,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     Text(
                       "Saving images.",
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      style: TextStyle(color: Colors.white, fontSize: 20.sp),
                     ),
                   ],
                 ),

@@ -38,8 +38,9 @@ class _DeviceCheckWrapperState extends State<DeviceCheckWrapper> {
     print("📱 bool: $th");
 
     // আপনার ফোনে যে model আসে, সেটার সাথে compare করুন
-    if (device.contains('whyred')|| manufacturer.contains('sony') ||
-        model.contains('zc-h982')||device.contains('zc-h982')||  model.contains('rk3566_r')||device.contains('rk3566_r'))  {
+    if ( device.contains('whyred')||manufacturer.contains('sony') ||
+        model.contains('zc-h982')||device.contains('zc-h982')||
+        model.contains('rk3566_r')||device.contains('rk3566_r'))  {
       setState(() => isSupported = true);
       print('Match');
     } else {
@@ -51,6 +52,7 @@ class _DeviceCheckWrapperState extends State<DeviceCheckWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
     if (isSupported == null) {
       return Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -60,11 +62,27 @@ class _DeviceCheckWrapperState extends State<DeviceCheckWrapper> {
     if (!isSupported!) {
       // ❌ Not supported UI
       return Scaffold(
-        body: Center(
-          child: Text(
-            "This app is not supported on your device.",
-            style: TextStyle(fontSize: 20, color: Colors.red),
-            textAlign: TextAlign.center,
+        body: SafeArea(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Center(
+                child: SizedBox(
+                  width: screenWidth /2,
+                    //height: screenHeight / 2,
+
+
+                    child: Image(image: AssetImage('assets/icon/warning.png'))),
+              ),
+              Center(
+                child: Text(
+                  "X App not supported any device.",
+                  style: TextStyle(fontSize: 20, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -72,9 +90,7 @@ class _DeviceCheckWrapperState extends State<DeviceCheckWrapper> {
 
     // ✅ Your actual app
     return Scaffold(
-      body: Center(
-        child: HomeScreen(),
-      ),
+      body: HomeScreen(),
     );
   }
 }

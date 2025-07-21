@@ -97,6 +97,7 @@ class _SliderShowScreenState extends State<SliderShowScreen> {
                 enlargeCenterPage: false,
                 viewportFraction: 1.0,
                 height: screenHeight,
+                scrollPhysics: NeverScrollableScrollPhysics(),// ❌ Swipe পুরোপুরি বন্ধ
               ),
             ),
           ),
